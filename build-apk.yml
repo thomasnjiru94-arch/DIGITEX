@@ -1,0 +1,42 @@
+name: Build DIGITEX APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+
+      - name: Create Android platform (if missing)
+        working-directory: mobile/digitex_flutter
+        run: |
+          flutter create . --platforms=android --org com.digitex.app --project-name digitex --overwrite
+          echo "Android platform ensured."
+
+      - name: Overwrite pubspec with DIGITEX config
+        working-directory: mobile/digitex_flutter
+        run: |
+          cp -f pubspec_custom.yaml pubspec.yaml
+
+      - name: Get packages
+        working-directory: mobile/digitex_flutter
+        run: flutter pub get
+
+      - name: Build APK (debug)
+        working-directory: mobile/digitex_flutter
+        run: flutter build apk --debug
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digitex-debug-apk
+          path: mobile/digitex_flutter/build/app/outputs/flutter-apk/app-debug.apk
